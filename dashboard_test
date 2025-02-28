@@ -1,0 +1,108 @@
+import org.junit.*;
+import static org.junit.Assert.*;
+import java.time.Duration;
+import org.openqa.selenium.*;
+import org.openqa.selenium.chrome.ChromeDriver;
+import org.openqa.selenium.support.ui.*;
+
+public class DashboardTests {
+    private WebDriver driver;
+    private WebDriverWait wait;
+
+    @Before
+    public void setUp() {
+        System.setProperty("webdriver.chrome.driver", "D:\\SELENIUM\\driver\\DIVER132\\CHROME\\DIVER\\chrome.exe");
+        driver = new ChromeDriver();
+        wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+        // Simulate a logged-in user by navigating directly to the dashboard page
+        driver.get("file:///D:/SELENIUM/driver/DIVER132/CHROME/PROJECT%20WEB%20SITE/dashboard.html");
+    }
+
+    @After
+    public void tearDown() {
+        driver.quit();
+    }
+
+    // TC_D1: Verify dashboard loads correct user data
+    @Test
+    public void testDashboardLoadsUserData() {
+        WebElement userData = wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("user-data")));
+        assertTrue(userData.getText().contains("Test User"));
+    }
+
+    // TC_D2: Test navigation links on the dashboard
+    @Test
+    public void testNavigationLinks() {
+        WebElement profileLink = wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("nav-profile")));
+        profileLink.click();
+        WebElement profilePage = wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("profile-page")));
+        assertNotNull(profilePage);
+    }
+
+    // TC_D3: Check responsiveness on various screen sizes
+    @Test
+    public void testDashboardResponsiveDesign() {
+        driver.manage().window().setSize(new Dimension(375, 667));
+        WebElement dashboard = wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("dashboard-content")));
+        assertTrue(dashboard.getSize().getWidth() <= 375);
+    }
+
+    // TC_D4: Measure dashboard load time (simple check using timestamps)
+    @Test
+    public void testDashboardLoadTime() {
+        long startTime = System.currentTimeMillis();
+        driver.navigate().refresh();
+        wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("dashboard-content")));
+        long loadTime = System.currentTimeMillis() - startTime;
+        assertTrue("Load time should be under 3000ms", loadTime < 3000);
+    }
+
+    // TC_D5: Verify data accuracy by comparing UI text with expected values
+    @Test
+    public void testDataAccuracy() {
+        WebElement userName = wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("user-name")));
+        assertEquals("Test User", userName.getText());
+    }
+
+    // TC_D6: Attempt to access dashboard without authentication
+    @Test
+    public void testUnauthorizedAccess() {
+        // Simulate by navigating to dashboard URL after clearing cookies/session
+        driver.manage().deleteAllCookies();
+        driver.get("file:///D:/SELENIUM/driver/DIVER132/CHROME/PROJECT%20WEB%20SITE/dashboard.html");
+        WebElement loginPage = wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("login-page")));
+        assertNotNull(loginPage);
+    }
+
+    // TC_D7: Test session timeout after inactivity (simulation)
+    @Test
+    public void testSessionTimeout() throws InterruptedException {
+        Thread.sleep(5000); // simulate inactivity (adjust as needed)
+        driver.navigate().refresh();
+        WebElement loginPage = wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("login-page")));
+        assertNotNull(loginPage);
+    }
+
+    // TC_D8: Simulate backend failure and check error handling
+    @Test
+    public void testBackendFailureHandling() {
+        // This would typically require a stub or proxy. Here, assume an error message appears.
+        driver.get("file:///D:/SELENIUM/driver/DIVER132/CHROME/PROJECT%20WEB%20SITE/dashboard-error.html");
+        WebElement errorMsg = wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("error-message")));
+        assertTrue(errorMsg.getText().toLowerCase().contains("error"));
+    }
+
+    // TC_D9: Validate UI components (e.g., buttons, charts) are interactive
+    @Test
+    public void testUIComponents() {
+        WebElement chart = wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("dashboard-chart")));
+        assertTrue(chart.isDisplayed());
+    }
+
+    // TC_D10: Test for exposed sensitive data (ensure none is displayed)
+    @Test
+    public void testSensitiveDataNotExposed() {
+        WebElement pageContent = wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("dashboard-content")));
+        assertFalse(pageContent.getText().toLowerCase().contains("password"));
+    }
+}

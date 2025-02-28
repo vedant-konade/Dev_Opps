@@ -1,0 +1,173 @@
+import org.junit.*;
+import static org.junit.Assert.*;
+import java.time.Duration;
+import org.openqa.selenium.*;
+import org.openqa.selenium.chrome.ChromeDriver;
+import org.openqa.selenium.support.ui.*;
+
+public class LoginTests {
+    private WebDriver driver;
+    private WebDriverWait wait;
+
+    @Before
+    public void setUp() {
+        System.setProperty("webdriver.chrome.driver", "D:\\SELENIUM\\driver\\DIVER132\\CHROME\\DIVER\\chrome.exe");
+        driver = new ChromeDriver();
+        wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+        // Use file:// URL format if using local files
+        driver.get("file:///D:/SELENIUM/driver/DIVER132/CHROME/PROJECT%20WEB%20SITE/index.html");
+    }
+
+    @After
+    public void tearDown() {
+        driver.quit();
+    }
+
+    // TC_L1: Valid login with correct email and password
+    @Test
+    public void testValidLogin() {
+        WebElement username = wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("login-username")));
+        WebElement password = driver.findElement(By.id("login-password"));
+        WebElement loginButton = driver.findElement(By.tagName("button"));
+        username.clear();
+        username.sendKeys("admin");
+        password.clear();
+        password.sendKeys("password");
+        loginButton.click();
+        // Wait for dashboard element as evidence of successful login
+        WebElement dashboard = wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("dashboard")));
+        assertNotNull(dashboard);
+    }
+
+    // TC_L2: Login with correct email but invalid password
+    @Test
+    public void testInvalidPassword() {
+        WebElement username = wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("login-username")));
+        WebElement password = driver.findElement(By.id("login-password"));
+        WebElement loginButton = driver.findElement(By.tagName("button"));
+        username.clear();
+        username.sendKeys("admin");
+        password.clear();
+        password.sendKeys("wrongpassword");
+        loginButton.click();
+        WebElement errorMessage = wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("login-error")));
+        assertEquals("Invalid credentials", errorMessage.getText());
+    }
+
+    // TC_L3: Submit the form with empty email and password fields
+    @Test
+    public void testEmptyFields() {
+        WebElement username = wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("login-username")));
+        WebElement password = driver.findElement(By.id("login-password"));
+        WebElement loginButton = driver.findElement(By.tagName("button"));
+        username.clear();
+        password.clear();
+        loginButton.click();
+        WebElement errorMessage = wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("login-error")));
+        assertTrue(errorMessage.getText().toLowerCase().contains("required"));
+    }
+
+    // TC_L4: Enter an invalid email format
+    @Test
+    public void testInvalidEmailFormat() {
+        WebElement username = wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("login-username")));
+        username.clear();
+        username.sendKeys("useratexample.com");
+        // Assuming front-end validation displays an error message
+        WebElement emailError = wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("login-email-error")));
+        assertTrue(emailError.getText().toLowerCase().contains("valid email"));
+    }
+
+    // TC_L5: Attempt SQL injection in the email field
+    @Test
+    public void testSQLInjectionAttempt() {
+        WebElement username = wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("login-username")));
+        WebElement password = driver.findElement(By.id("login-password"));
+        WebElement loginButton = driver.findElement(By.tagName("button"));
+        username.clear();
+        username.sendKeys("' OR '1'='1");
+        password.clear();
+        password.sendKeys("any");
+        loginButton.click();
+        WebElement errorMessage = wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("login-error")));
+        assertTrue(errorMessage.getText().contains("Invalid"));
+    }
+
+    // TC_L6: Attempt XSS attack by inserting script tags in the password field
+    @Test
+    public void testXSSAttempt() {
+        WebElement username = wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("login-username")));
+        WebElement password = driver.findElement(By.id("login-password"));
+        WebElement loginButton = driver.findElement(By.tagName("button"));
+        username.clear();
+        username.sendKeys("admin");
+        password.clear();
+        password.sendKeys("<script>alert('XSS')</script>");
+        loginButton.click();
+        WebElement errorMessage = wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("login-error")));
+        assertTrue(errorMessage.getText().contains("Invalid"));
+    }
+
+    // TC_L7: Verify case sensitivity of the email
+    @Test
+    public void testEmailCaseSensitivity() {
+        WebElement username = wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("login-username")));
+        WebElement password = driver.findElement(By.id("login-password"));
+        WebElement loginButton = driver.findElement(By.tagName("button"));
+        username.clear();
+        username.sendKeys("ADMIN@EXAMPLE.COM");
+        password.clear();
+        password.sendKeys("password");
+        loginButton.click();
+        WebElement dashboard = wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("dashboard")));
+        assertNotNull(dashboard);
+    }
+
+    // TC_L8: Test “Remember Me” feature (if implemented)
+    @Test
+    public void testRememberMeFeature() {
+        WebElement username = wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("login-username")));
+        WebElement password = driver.findElement(By.id("login-password"));
+        WebElement rememberMe = driver.findElement(By.id("remember-me")); // assuming a checkbox exists
+        WebElement loginButton = driver.findElement(By.tagName("button"));
+        username.clear();
+        username.sendKeys("admin");
+        password.clear();
+        password.sendKeys("password");
+        if (!rememberMe.isSelected()) {
+            rememberMe.click();
+        }
+        loginButton.click();
+        WebElement dashboard = wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("dashboard")));
+        assertNotNull(dashboard);
+    }
+
+    // TC_L9: Validate layout and responsiveness across different browser sizes
+    @Test
+    public void testResponsiveDesign() {
+        driver.manage().window().setSize(new Dimension(375, 667)); // e.g., mobile size
+        WebElement loginForm = wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("login-form")));
+        // Check if form width fits within the window (this is a simple check)
+        assertTrue(loginForm.getSize().getWidth() <= 375);
+    }
+
+    // TC_L10: Test session management by verifying that the session expires after logout
+    @Test
+    public void testSessionManagement() {
+        // First, perform a valid login
+        WebElement username = wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("login-username")));
+        WebElement password = driver.findElement(By.id("login-password"));
+        WebElement loginButton = driver.findElement(By.tagName("button"));
+        username.clear();
+        username.sendKeys("admin");
+        password.clear();
+        password.sendKeys("password");
+        loginButton.click();
+        wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("dashboard")));
+        // Now, perform logout (assuming a logout button with id "logout" exists)
+        WebElement logoutButton = wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("logout")));
+        logoutButton.click();
+        WebElement loginPage = wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("login-page")));
+        assertNotNull(loginPage);
+    }
+}

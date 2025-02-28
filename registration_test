@@ -1,0 +1,161 @@
+import org.junit.*;
+import static org.junit.Assert.*;
+import java.time.Duration;
+import org.openqa.selenium.*;
+import org.openqa.selenium.chrome.ChromeDriver;
+import org.openqa.selenium.support.ui.*;
+
+public class RegistrationTests {
+    private WebDriver driver;
+    private WebDriverWait wait;
+
+    @Before
+    public void setUp() {
+        System.setProperty("webdriver.chrome.driver", "D:\\SELENIUM\\driver\\DIVER132\\CHROME\\DIVER\\chrome.exe");
+        driver = new ChromeDriver();
+        wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+        driver.get("file:///D:/SELENIUM/driver/DIVER132/CHROME/PROJECT%20WEB%20SITE/registration.html");
+    }
+
+    @After
+    public void tearDown() {
+        driver.quit();
+    }
+
+    // TC_R1: Valid registration with all correct inputs
+    @Test
+    public void testValidRegistration() {
+        WebElement name = wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("register-name")));
+        WebElement email = driver.findElement(By.id("register-email"));
+        WebElement password = driver.findElement(By.id("register-password"));
+        WebElement registerButton = driver.findElement(By.tagName("button"));
+        name.clear(); email.clear(); password.clear();
+        name.sendKeys("Test User");
+        email.sendKeys("testuser@example.com");
+        password.sendKeys("StrongPassword123");
+        registerButton.click();
+        WebElement successMessage = wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("registration-success")));
+        assertTrue(successMessage.getText().toLowerCase().contains("success"));
+    }
+
+    // TC_R2: Registration with an already registered email address
+    @Test
+    public void testDuplicateEmail() {
+        WebElement name = wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("register-name")));
+        WebElement email = driver.findElement(By.id("register-email"));
+        WebElement password = driver.findElement(By.id("register-password"));
+        WebElement registerButton = driver.findElement(By.tagName("button"));
+        name.clear(); email.clear(); password.clear();
+        name.sendKeys("Test User");
+        email.sendKeys("existing@example.com"); // assume this email is already registered
+        password.sendKeys("AnotherPassword123");
+        registerButton.click();
+        WebElement errorMessage = wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("registration-error")));
+        assertTrue(errorMessage.getText().toLowerCase().contains("already in use"));
+    }
+
+    // TC_R3: Submit the form with missing required fields
+    @Test
+    public void testMissingFields() {
+        WebElement name = wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("register-name")));
+        WebElement email = driver.findElement(By.id("register-email"));
+        WebElement password = driver.findElement(By.id("register-password"));
+        WebElement registerButton = driver.findElement(By.tagName("button"));
+        name.clear();
+        email.clear();
+        password.clear();
+        registerButton.click();
+        WebElement errorMessage = wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("registration-error")));
+        assertTrue(errorMessage.getText().toLowerCase().contains("required"));
+    }
+
+    // TC_R4: Enter an invalid email format
+    @Test
+    public void testInvalidEmailFormat() {
+        WebElement email = wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("register-email")));
+        email.clear();
+        email.sendKeys("invalid-email");
+        WebElement emailError = wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("register-email-error")));
+        assertTrue(emailError.getText().toLowerCase().contains("valid email"));
+    }
+
+    // TC_R5: Test weak password input
+    @Test
+    public void testWeakPassword() {
+        WebElement password = wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("register-password")));
+        password.clear();
+        password.sendKeys("123");
+        WebElement passError = wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("register-password-error")));
+        assertTrue(passError.getText().toLowerCase().contains("weak"));
+    }
+
+    // TC_R6: Attempt SQL injection in an input field
+    @Test
+    public void testSQLInjection() {
+        WebElement name = wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("register-name")));
+        WebElement email = driver.findElement(By.id("register-email"));
+        WebElement password = driver.findElement(By.id("register-password"));
+        WebElement registerButton = driver.findElement(By.tagName("button"));
+        name.clear();
+        name.sendKeys("' OR '1'='1");
+        email.clear();
+        email.sendKeys("hacker@example.com");
+        password.clear();
+        password.sendKeys("pass1234");
+        registerButton.click();
+        WebElement errorMessage = wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("registration-error")));
+        assertTrue(errorMessage.getText().toLowerCase().contains("invalid"));
+    }
+
+    // TC_R7: Attempt XSS by injecting script tags
+    @Test
+    public void testXSSAttempt() {
+        WebElement name = wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("register-name")));
+        name.clear();
+        name.sendKeys("<script>alert('XSS')</script>");
+        WebElement nameError = wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("register-name-error")));
+        assertTrue(nameError.getText().toLowerCase().contains("invalid"));
+    }
+
+    // TC_R8: Test confirm password mismatch (if field exists)
+    @Test
+    public void testConfirmPasswordMismatch() {
+        WebElement password = wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("register-password")));
+        WebElement confirmPassword = driver.findElement(By.id("register-confirm-password"));
+        password.clear();
+        confirmPassword.clear();
+        password.sendKeys("Password123");
+        confirmPassword.sendKeys("Password321");
+        WebElement registerButton = driver.findElement(By.tagName("button"));
+        registerButton.click();
+        WebElement errorMessage = wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("register-confirm-error")));
+        assertTrue(errorMessage.getText().toLowerCase().contains("do not match"));
+    }
+
+    // TC_R9: Verify responsive design on mobile devices
+    @Test
+    public void testResponsiveDesign() {
+        driver.manage().window().setSize(new Dimension(375, 667)); // mobile dimensions
+        WebElement form = wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("registration-form")));
+        assertTrue(form.getSize().getWidth() <= 375);
+    }
+
+    // TC_R10: Check data persistence by verifying registration reflects in UI or database (simulate with UI confirmation)
+    @Test
+    public void testDataPersistence() {
+        WebElement name = wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("register-name")));
+        WebElement email = driver.findElement(By.id("register-email"));
+        WebElement password = driver.findElement(By.id("register-password"));
+        WebElement registerButton = driver.findElement(By.tagName("button"));
+        name.clear();
+        email.clear();
+        password.clear();
+        name.sendKeys("Persist User");
+        email.sendKeys("persistuser@example.com");
+        password.sendKeys("PasswordPersist123");
+        registerButton.click();
+        // After registration, assume a success message or redirection indicates data persistence
+        WebElement successMessage = wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("registration-success")));
+        assertTrue(successMessage.getText().toLowerCase().contains("success"));
+    }
+}

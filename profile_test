@@ -1,0 +1,140 @@
+import org.junit.*;
+import static org.junit.Assert.*;
+import java.time.Duration;
+import org.openqa.selenium.*;
+import org.openqa.selenium.chrome.ChromeDriver;
+import org.openqa.selenium.support.ui.*;
+
+public class ProfileManagementTests {
+    private WebDriver driver;
+    private WebDriverWait wait;
+
+    @Before
+    public void setUp() {
+        System.setProperty("webdriver.chrome.driver", "D:\\SELENIUM\\driver\\DIVER132\\CHROME\\DIVER\\chrome.exe");
+        driver = new ChromeDriver();
+        wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+        // Assume user is already logged in and navigates to the profile page
+        driver.get("file:///D:/SELENIUM/driver/DIVER132/CHROME/PROJECT%20WEB%20SITE/profile.html");
+    }
+
+    @After
+    public void tearDown() {
+        driver.quit();
+    }
+
+    // TC_PM1: Update profile with valid data
+    @Test
+    public void testUpdateProfileValidData() {
+        WebElement nameField = wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("profile-name")));
+        nameField.clear();
+        nameField.sendKeys("Updated User");
+        WebElement updateButton = driver.findElement(By.id("update-profile"));
+        updateButton.click();
+        WebElement successMsg = wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("profile-success")));
+        assertTrue(successMsg.getText().toLowerCase().contains("updated"));
+    }
+
+    // TC_PM2: Attempt update with invalid data (e.g., invalid email)
+    @Test
+    public void testUpdateProfileInvalidData() {
+        WebElement emailField = wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("profile-email")));
+        emailField.clear();
+        emailField.sendKeys("invalid-email");
+        WebElement updateButton = driver.findElement(By.id("update-profile"));
+        updateButton.click();
+        WebElement errorMsg = wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("profile-error")));
+        assertTrue(errorMsg.getText().toLowerCase().contains("valid email"));
+    }
+
+    // TC_PM3: Verify that only authenticated users can access the profile page
+    @Test
+    public void testAuthenticatedAccess() {
+        // Simulate logout then try to access profile page
+        driver.manage().deleteAllCookies();
+        driver.get("file:///D:/SELENIUM/driver/DIVER132/CHROME/PROJECT%20WEB%20SITE/profile.html");
+        WebElement loginPage = wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("login-page")));
+        assertNotNull(loginPage);
+    }
+
+    // TC_PM4: Test profile picture upload with a valid image
+    @Test
+    public void testProfilePictureUploadValid() {
+        WebElement uploadInput = wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("profile-picture")));
+        // Provide the path to a valid image file on your system
+        uploadInput.sendKeys("D:\\SELENIUM\\testfiles\\validImage.jpg");
+        WebElement uploadButton = driver.findElement(By.id("upload-button"));
+        uploadButton.click();
+        WebElement preview = wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("picture-preview")));
+        assertTrue(preview.isDisplayed());
+    }
+
+    // TC_PM5: Attempt to upload an unsupported file type
+    @Test
+    public void testProfilePictureUploadInvalid() {
+        WebElement uploadInput = wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("profile-picture")));
+        uploadInput.sendKeys("D:\\SELENIUM\\testfiles\\invalidFile.txt");
+        WebElement uploadButton = driver.findElement(By.id("upload-button"));
+        uploadButton.click();
+        WebElement errorMsg = wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("upload-error")));
+        assertTrue(errorMsg.getText().toLowerCase().contains("invalid file type"));
+    }
+
+    // TC_PM6: Change password with valid current and new passwords
+    @Test
+    public void testPasswordChangeValid() {
+        WebElement currentPass = wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("current-password")));
+        WebElement newPass = driver.findElement(By.id("new-password"));
+        WebElement changeButton = driver.findElement(By.id("change-password"));
+        currentPass.clear();
+        currentPass.sendKeys("oldPassword");
+        newPass.clear();
+        newPass.sendKeys("newStrongPassword");
+        changeButton.click();
+        WebElement successMsg = wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("password-success")));
+        assertTrue(successMsg.getText().toLowerCase().contains("changed"));
+    }
+
+    // TC_PM7: Submit profile update with required fields missing
+    @Test
+    public void testMissingRequiredFields() {
+        WebElement nameField = wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("profile-name")));
+        nameField.clear();
+        WebElement updateButton = driver.findElement(By.id("update-profile"));
+        updateButton.click();
+        WebElement errorMsg = wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("profile-error")));
+        assertTrue(errorMsg.getText().toLowerCase().contains("required"));
+    }
+
+    // TC_PM8: Verify updated data persists after page refresh
+    @Test
+    public void testDataPersistenceAfterUpdate() {
+        WebElement nameField = wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("profile-name")));
+        nameField.clear();
+        nameField.sendKeys("Persistent User");
+        WebElement updateButton = driver.findElement(By.id("update-profile"));
+        updateButton.click();
+        wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("profile-success")));
+        driver.navigate().refresh();
+        WebElement updatedName = wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("profile-name")));
+        assertEquals("Persistent User", updatedName.getAttribute("value"));
+    }
+
+    // TC_PM9: Check responsive layout on different devices
+    @Test
+    public void testProfileResponsiveDesign() {
+        driver.manage().window().setSize(new Dimension(375, 667));
+        WebElement profileForm = wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("profile-form")));
+        assertTrue(profileForm.getSize().getWidth() <= 375);
+    }
+
+    // TC_PM10: Test CSRF protection by simulating a form submission from an external source
+    @Test
+    public void testCSRFProtection() {
+        // This may involve sending a request without the proper CSRF token.
+        // For demonstration, assume that attempting to update without a CSRF token shows an error.
+        driver.get("file:///D:/SELENIUM/driver/DIVER132/CHROME/PROJECT%20WEB%20SITE/profile-csrf.html");
+        WebElement errorMsg = wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("csrf-error")));
+        assertTrue(errorMsg.getText().toLowerCase().contains("csrf"));
+    }
+}
